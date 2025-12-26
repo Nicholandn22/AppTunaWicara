@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="app_name">Tuna Wicara</string>
+    <string name="difficulty_advanced">Lanjutan</string>
+    <string name="difficulty_beginner">Pemula</string>
+    <string name="difficulty_intermediate">Menengah</string>
+    <string name="duration_minutes">%d menit</string>
+    <string name="error_loading_exercises">Terjadi kesalahan saat memuat latihan</string>
+    <string name="exercise_category_articulation">Artikulasi</string>
+    <string name="exercise_category_breathing">Pernapasan</string>
+    <string name="exercise_category_phonation">Fonasi</string>
+    <string name="exercise_category_resonance">Resonansi</string>
+    <string name="exercise_category_vocabulary">Kosakata</string>
+    <string name="home_title">Latihan Terapi Wicara</string>
+    <string name="permission_microphone_required">Izin mikrofon diperlukan untuk merekam audio</string>
+    <string name="recording_in_progress">Sedang merekam...</string>
+    <string name="recording_saved">Rekaman tersimpan</string>
+    <string name="retry">Coba Lagi</string>
+    <string name="start_recording">Mulai Rekam</string>
+    <string name="stop_recording">Hentikan Rekam</string>
+    <style name="Theme.TunaWicara" parent="android:Theme.Material.Light.NoActionBar"/>
+</resources>
