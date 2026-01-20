@@ -13,8 +13,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.tunawicara.app.presentation.auth.AuthViewModel
 import com.tunawicara.app.presentation.revoice.DarkText
 import com.tunawicara.app.presentation.revoice.MintGreen
 import com.tunawicara.app.presentation.revoice.TurquoiseBlue
@@ -25,23 +27,61 @@ import com.tunawicara.app.presentation.revoice.TurquoiseBlue
  */
 @Composable
 fun MainScaffold(
-    navController: NavHostController
+    navController: NavHostController,
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    
+    // Check if current route is an auth screen
+    val isAuthScreen = currentRoute in listOf(
+        Screen.Login.route,
+        Screen.Signup.route,
+        Screen.ForgotPassword.route,
+        Screen.CompleteProfile.route
+    )
+    
+    // Check if current route is a main app screen (where we should show nav bars)
+    val isMainScreen = currentRoute in listOf(
+        Screen.Beranda.route,
+        Screen.Laporan.route,
+        Screen.Trofi.route,
+        Screen.Profil.route
+    )
+    
+    // Determine start destination based on login state
+    val startDestination = if (isLoggedIn) Screen.Beranda.route else Screen.Login.route
     
     Scaffold(
         topBar = {
-            AppTopBar(currentRoute = currentRoute)
+            // Show top bar only on main screens
+            if (isMainScreen) {
+                AppTopBar(
+                    currentRoute = currentRoute,
+                    onLogout = {
+                        authViewModel.logout()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
         },
         bottomBar = {
-            BottomNavigationBar(
-                navController = navController,
-                currentRoute = currentRoute
-            )
+            // Show bottom nav only on main screens
+            if (isMainScreen) {
+                BottomNavigationBar(
+                    navController = navController,
+                    currentRoute = currentRoute
+                )
+            }
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
-            NavGraph(navController = navController)
+            NavGraph(
+                navController = navController,
+                startDestination = startDestination
+            )
         }
     }
 }
@@ -50,7 +90,10 @@ fun MainScaffold(
  * App top bar with dynamic title based on current screen
  */
 @Composable
-fun AppTopBar(currentRoute: String?) {
+fun AppTopBar(
+    currentRoute: String?,
+    onLogout: () -> Unit = {}
+) {
     val title = when (currentRoute) {
         Screen.Beranda.route -> "ReVoice"
         Screen.Laporan.route -> "Laporan"
@@ -60,19 +103,17 @@ fun AppTopBar(currentRoute: String?) {
     }
     
     Column {
-        // Status bar area with time and icons
-
-        
         // Main header
         Surface(
             color = TurquoiseBlue,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 20.dp),
-                contentAlignment = Alignment.Center
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = title,
@@ -80,6 +121,15 @@ fun AppTopBar(currentRoute: String?) {
                     fontWeight = FontWeight.Bold,
                     color = DarkText
                 )
+                
+                // Logout button
+                IconButton(onClick = onLogout) {
+                    Icon(
+                        imageVector = Icons.Default.Logout,
+                        contentDescription = "Logout",
+                        tint = DarkText
+                    )
+                }
             }
         }
     }

@@ -4,6 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.tunawicara.app.presentation.auth.CompleteProfileScreen
+import com.tunawicara.app.presentation.auth.ForgotPasswordScreen
+import com.tunawicara.app.presentation.auth.LoginScreen
+import com.tunawicara.app.presentation.auth.SignupScreen
 import com.tunawicara.app.presentation.revoice.ReVoiceScreen
 
 /**
@@ -11,12 +15,67 @@ import com.tunawicara.app.presentation.revoice.ReVoiceScreen
  */
 @Composable
 fun NavGraph(
-    navController: NavHostController
+    navController: NavHostController,
+    startDestination: String = Screen.Login.route
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Beranda.route
+        startDestination = startDestination
     ) {
+        // Auth Screens
+        composable(route = Screen.Login.route) {
+            LoginScreen(
+                onNavigateToSignup = {
+                    navController.navigate(Screen.Signup.route)
+                },
+                onNavigateToForgotPassword = {
+                    navController.navigate(Screen.ForgotPassword.route)
+                },
+                onLoginSuccess = {
+                    navController.navigate(Screen.Beranda.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNeedsProfileCompletion = {
+                    navController.navigate(Screen.CompleteProfile.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        
+        composable(route = Screen.Signup.route) {
+            SignupScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSignupSuccess = {
+                    navController.navigate(Screen.Beranda.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        
+        composable(route = Screen.ForgotPassword.route) {
+            ForgotPasswordScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        
+        composable(route = Screen.CompleteProfile.route) {
+            CompleteProfileScreen(
+                onProfileComplete = {
+                    navController.navigate(Screen.Beranda.route) {
+                        popUpTo(Screen.CompleteProfile.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        
+        // Main App Screens
         composable(route = Screen.Beranda.route) {
             ReVoiceScreen()
         }
@@ -32,10 +91,6 @@ fun NavGraph(
         composable(route = Screen.Profil.route) {
             com.tunawicara.app.presentation.profil.ProfilScreen()
         }
-        
-        // Add more screens here as needed
-        // composable(route = Screen.ExerciseDetail.route + "/{exerciseId}") { ... }
-        // composable(route = Screen.Progress.route) { ... }
     }
 }
 
@@ -43,6 +98,13 @@ fun NavGraph(
  * Screen routes
  */
 sealed class Screen(val route: String) {
+    // Auth Screens
+    object Login : Screen("login")
+    object Signup : Screen("signup")
+    object ForgotPassword : Screen("forgot_password")
+    object CompleteProfile : Screen("complete_profile")
+    
+    // Main Screens
     object Beranda : Screen("beranda")
     object Laporan : Screen("laporan")
     object Trofi : Screen("trofi")
