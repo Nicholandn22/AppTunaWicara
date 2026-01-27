@@ -3,6 +3,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <string name="app_name">Tuna Wicara</string>
+    <string name="default_web_client_id" translatable="false">281337225766-9m5a3e6f0c6ama91lglcs8ddm2om8tn5.apps.googleusercontent.com</string>
     <string name="difficulty_advanced">Lanjutan</string>
     <string name="difficulty_beginner">Pemula</string>
     <string name="difficulty_intermediate">Menengah</string>
@@ -13,8 +14,14 @@
     <string name="exercise_category_phonation">Fonasi</string>
     <string name="exercise_category_resonance">Resonansi</string>
     <string name="exercise_category_vocabulary">Kosakata</string>
+    <string name="gcm_defaultSenderId" translatable="false">281337225766</string>
+    <string name="google_api_key" translatable="false">AIzaSyDgMW7uSVq21aVujbLCoAV2TGYvnzBRA4E</string>
+    <string name="google_app_id" translatable="false">1:281337225766:android:c13eb010ad3eaed1777ce7</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDgMW7uSVq21aVujbLCoAV2TGYvnzBRA4E</string>
+    <string name="google_storage_bucket" translatable="false">app-tuna-wicara.firebasestorage.app</string>
     <string name="home_title">Latihan Terapi Wicara</string>
     <string name="permission_microphone_required">Izin mikrofon diperlukan untuk merekam audio</string>
+    <string name="project_id" translatable="false">app-tuna-wicara</string>
     <string name="recording_in_progress">Sedang merekam...</string>
     <string name="recording_saved">Rekaman tersimpan</string>
     <string name="retry">Coba Lagi</string>

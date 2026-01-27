@@ -3,30 +3,54 @@ package com.tunawicara.app.presentation.home
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.tunawicara.app.domain.model.Exercise
+import coil.compose.AsyncImage
+import com.tunawicara.app.domain.usecase.MateriWithProgress
+
+// Custom Colors based on design
+val HeaderBlue = Color(0xFF5B9EE1)
+val ButtonGreen = Color(0xFFCDFFC0)
+val ButtonRed = Color(0xFFFFB4B4)
+val ButtonYellow = Color(0xFFFFEBAF)
+val BottomBarBlue = Color(0xFF63B4F6)
+val NavButtonOrange = Color(0xFFFFCCAA)
+val TextDark = Color(0xFF333333)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val materiState by viewModel.materiState.collectAsState()
     val isRecording by viewModel.isRecording.collectAsState()
     val recordingDuration by viewModel.recordingDuration.collectAsState()
     
@@ -41,46 +65,81 @@ fun HomeScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Tuna Wicara") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            Column {
+                // Status Bar area (simulated color match)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(HeaderBlue)
+                        .statusBarsPadding()
                 )
-            )
+                
+                TopAppBar(
+                    title = { 
+                        Text(
+                            "ReVoice",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp
+                        ) 
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = HeaderBlue,
+                        titleContentColor = TextDark
+                    ),
+                    actions = {
+                        // Battery and Wifi icons would go here typically, 
+                        // but usually handled by system status bar
+                    }
+                )
+            }
         },
-        floatingActionButton = {
-            RecordingFab(
-                isRecording = isRecording,
-                recordingDuration = recordingDuration,
-                onToggleRecording = {
-                    viewModel.toggleRecordingWithPermission(
-                        onPermissionNeeded = {
-                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        }
-                    )
-                }
-            )
+        bottomBar = {
+            if (materiState is MateriState.Success) {
+                BottomNavigationBar(
+                    onPrevious = { viewModel.previousMateri() },
+                    onNext = { viewModel.nextMateri() },
+                    hasPrevious = (materiState as MateriState.Success).hasPrevious,
+                    hasNext = (materiState as MateriState.Success).hasNext
+                )
+            }
         }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFFF5F5F5)) // Light gray background
                 .padding(paddingValues)
         ) {
-            when (val currentState = state) {
-                is HomeState.Loading -> {
+            when (val currentState = materiState) {
+                is MateriState.Loading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
-                is HomeState.Success -> {
-                    ExerciseList(exercises = currentState.exercises)
+                is MateriState.Success -> {
+                    MateriContent(
+                        materiState = currentState,
+                        isRecording = isRecording,
+                        recordingDuration = recordingDuration,
+                        onStartRecording = {
+                            viewModel.toggleRecordingWithPermission(
+                                onPermissionNeeded = {
+                                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            )
+                        },
+                        onStopRecording = {
+                            if (isRecording) viewModel.toggleRecording()
+                        },
+                        onPlayRecording = {
+                            viewModel.playRecording()
+                        }
+                    )
                 }
-                is HomeState.Error -> {
+                is MateriState.Error -> {
                     ErrorContent(
                         message = currentState.message,
-                        onRetry = { viewModel.loadExercises() },
+                        onRetry = { viewModel.loadMateriWicara() },
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -90,99 +149,251 @@ fun HomeScreen(
 }
 
 @Composable
-fun ExerciseList(
-    exercises: List<Exercise>,
+fun MateriContent(
+    materiState: MateriState.Success,
+    isRecording: Boolean,
+    recordingDuration: Long,
+    onStartRecording: () -> Unit,
+    onStopRecording: () -> Unit,
+    onPlayRecording: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    val currentMateri = materiState.currentMateri
+    
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        item {
-            Text(
-                text = "Latihan Terapi Wicara",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
+        // Back Icon and Header Title Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Using back arrow as "Return" icon visual
+                contentDescription = "Kembali ke menu",
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .padding(4.dp),
+                tint = TextDark
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Text(
+                text = "Latihan Berbicara",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextDark
+                )
+            )
         }
         
-        items(exercises) { exercise ->
-            ExerciseCard(exercise = exercise)
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Image Area
+        currentMateri?.let { materi ->
+            materi.materi.imageUrl?.let { imageUrl ->
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = materi.materi.teks,
+                    modifier = Modifier
+                        .size(240.dp)
+                        .padding(8.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } ?: Box(modifier = Modifier.size(240.dp)) // Placeholder space
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Speaker Icon - Text - Counter Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Speaker Button (Visual Only for now)
+                IconButton(
+                    onClick = { /* TODO: Implement TTS */ },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(Color(0xFFAED581), CircleShape) // Light green circle background
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                        contentDescription = "Dengarkan",
+                        tint = TextDark
+                    )
+                }
+                
+                // Word Text
+                Text(
+                    text = materi.materi.teks,
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = TextDark
+                    )
+                )
+                
+                // Counter
+                Text(
+                    text = "${materiState.currentIndex + 1}/${materiState.materiList.size}",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = TextDark
+                    )
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(48.dp))
+            
+            // Action Buttons
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            ) {
+                // Mulai Rekam
+                ActionButton(
+                    text = "Mulai Rekam",
+                    icon = Icons.Default.Mic,
+                    backgroundColor = ButtonGreen,
+                    onClick = onStartRecording,
+                    enabled = !isRecording
+                )
+                
+                // Berhenti Rekam
+                ActionButton(
+                    text = "Berhenti Rekam",
+                    icon = Icons.Default.Mic, // Using Mic icon for stop visually in design, but distinct color
+                    backgroundColor = ButtonRed,
+                    onClick = onStopRecording,
+                    enabled = isRecording
+                )
+                
+                // Hasil Rekaman
+                ActionButton(
+                    text = "Hasil Rekaman",
+                    icon = Icons.AutoMirrored.Filled.VolumeUp,
+                    backgroundColor = ButtonYellow,
+                    onClick = onPlayRecording
+                )
+            }
         }
     }
 }
 
 @Composable
-fun ExerciseCard(
-    exercise: Exercise,
+fun ActionButton(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    backgroundColor: Color,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp)),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = backgroundColor,
+            contentColor = TextDark,
+            disabledContainerColor = backgroundColor.copy(alpha = 0.6f),
+            disabledContentColor = TextDark.copy(alpha = 0.6f)
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = exercise.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            text = exercise.difficulty.name,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    },
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = exercise.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
             )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text("${exercise.durationMinutes} menit")
-                    }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
                 )
-                
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text(getCategoryText(exercise.category.name))
-                    }
-                )
-            }
+            )
+        }
+    }
+}
+
+@Composable
+fun BottomNavigationBar(
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    hasPrevious: Boolean,
+    hasNext: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BottomBarBlue)
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Kembali Button
+        Button(
+            onClick = onPrevious,
+            enabled = hasPrevious,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = NavButtonOrange,
+                contentColor = TextDark,
+                disabledContainerColor = NavButtonOrange.copy(alpha = 0.6f),
+                disabledContentColor = TextDark.copy(alpha = 0.6f)
+            ),
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp)
+                .height(48.dp)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                "Kembali",
+                fontWeight = FontWeight.Bold
+            )
+        }
+        
+        // Lanjut Button
+        Button(
+            onClick = onNext,
+            enabled = hasNext,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = NavButtonOrange,
+                contentColor = TextDark,
+                disabledContainerColor = NavButtonOrange.copy(alpha = 0.6f),
+                disabledContentColor = TextDark.copy(alpha = 0.6f)
+            ),
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 8.dp)
+                .height(48.dp)
+        ) {
+            Text(
+                "Lanjut",
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
         }
     }
 }
@@ -194,82 +405,59 @@ fun ErrorContent(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(16.dp),
+        modifier = modifier.padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Error Illustration/Icon
+        Icon(
+            imageVector = Icons.Default.Refresh, // Placeholder for an error illustration
+            contentDescription = null,
+            modifier = Modifier
+                .size(64.dp)
+                .background(ButtonRed.copy(alpha = 0.2f), CircleShape)
+                .padding(16.dp),
+            tint = ButtonRed
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Text(
+            text = "Ups, ada kendala!",
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold,
+                color = TextDark
+            )
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
         Text(
             text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.error
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray,
+            textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Coba Lagi")
-        }
-    }
-}
-
-private fun getCategoryText(category: String): String {
-    return when (category) {
-        "ARTICULATION" -> "Artikulasi"
-        "PHONATION" -> "Fonasi"
-        "RESONANCE" -> "Resonansi"
-        "BREATHING" -> "Pernapasan"
-        "VOCABULARY" -> "Kosakata"
-        else -> category
-    }
-}
-
-@Composable
-fun RecordingFab(
-    isRecording: Boolean,
-    recordingDuration: Long,
-    onToggleRecording: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-    ) {
-        // Show duration when recording
-        if (isRecording) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                ),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Text(
-                    text = formatDuration(recordingDuration),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
-        }
         
-        FloatingActionButton(
-            onClick = onToggleRecording,
-            containerColor = if (isRecording) 
-                MaterialTheme.colorScheme.error 
-            else 
-                MaterialTheme.colorScheme.primary,
-            contentColor = if (isRecording) 
-                MaterialTheme.colorScheme.onError 
-            else 
-                MaterialTheme.colorScheme.onPrimary
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ButtonGreen,
+                contentColor = TextDark
+            ),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
         ) {
-            Icon(
-                imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
-                contentDescription = if (isRecording) "Stop Recording" else "Start Recording"
+            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "Coba Lagi",
+                fontWeight = FontWeight.Bold
             )
         }
     }
-}
-
-private fun formatDuration(millis: Long): String {
-    val seconds = (millis / 1000) % 60
-    val minutes = (millis / 1000) / 60
-    return String.format("%02d:%02d", minutes, seconds)
 }

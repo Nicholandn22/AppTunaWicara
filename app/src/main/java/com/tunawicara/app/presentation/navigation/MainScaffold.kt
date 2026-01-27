@@ -182,12 +182,7 @@ fun BottomNavigationBar(
             // Center Mic Button (Elevated)
             FloatingActionButton(
                 onClick = {
-                    // Navigate to Beranda if not already there
-                    if (currentRoute != Screen.Beranda.route) {
-                        navController.navigate(Screen.Beranda.route) {
-                            popUpTo(Screen.Beranda.route) { inclusive = true }
-                        }
-                    }
+                    navController.navigate(Screen.Latihan.route)
                 },
                 containerColor = MintGreen,
                 contentColor = DarkText,

@@ -105,6 +105,9 @@ dependencies {
     // Google Sign-In (Legacy - more stable)
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

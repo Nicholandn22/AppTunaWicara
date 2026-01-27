@@ -8,6 +8,7 @@ import com.tunawicara.app.presentation.auth.CompleteProfileScreen
 import com.tunawicara.app.presentation.auth.ForgotPasswordScreen
 import com.tunawicara.app.presentation.auth.LoginScreen
 import com.tunawicara.app.presentation.auth.SignupScreen
+import com.tunawicara.app.presentation.latihan.LatihanScreen
 import com.tunawicara.app.presentation.revoice.ReVoiceScreen
 
 /**
@@ -77,7 +78,7 @@ fun NavGraph(
         
         // Main App Screens
         composable(route = Screen.Beranda.route) {
-            ReVoiceScreen()
+            ReVoiceScreen(navController = navController)
         }
         
         composable(route = Screen.Laporan.route) {
@@ -90,6 +91,14 @@ fun NavGraph(
         
         composable(route = Screen.Profil.route) {
             com.tunawicara.app.presentation.profil.ProfilScreen()
+        }
+
+        composable(route = Screen.Latihan.route) {
+            LatihanScreen(
+                onNavigateToExercise = {
+                    // TODO: Navigate to exercise detail
+                }
+            )
         }
     }
 }
@@ -109,6 +118,7 @@ sealed class Screen(val route: String) {
     object Laporan : Screen("laporan")
     object Trofi : Screen("trofi")
     object Profil : Screen("profil")
+    object Latihan : Screen("latihan")
     object ExerciseDetail : Screen("exercise_detail")
     object Progress : Screen("progress")
 }

@@ -20,7 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.tunawicara.app.presentation.home.HomeViewModel
+import com.tunawicara.app.presentation.navigation.Screen
 
 // Color palette matching the image
 val TurquoiseBlue = Color(0xFF5FC3D1)
@@ -30,6 +32,7 @@ val DarkText = Color(0xFF2D2D2D)
 
 @Composable
 fun ReVoiceScreen(
+    navController: NavController,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val isRecording by viewModel.isRecording.collectAsState()
@@ -104,11 +107,7 @@ fun ReVoiceScreen(
         RecordingButton(
             isRecording = isRecording,
             onClick = {
-                viewModel.toggleRecordingWithPermission(
-                    onPermissionNeeded = {
-                        // Permission will be handled by MainActivity
-                    }
-                )
+                navController.navigate(Screen.Latihan.route)
             },
             modifier = Modifier
                 .fillMaxWidth()

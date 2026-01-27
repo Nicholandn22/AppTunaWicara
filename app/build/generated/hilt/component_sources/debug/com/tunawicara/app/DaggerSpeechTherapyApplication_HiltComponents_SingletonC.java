@@ -6,12 +6,26 @@ import android.view.View;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModel;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.tunawicara.app.data.audio.AudioPlayerManager;
 import com.tunawicara.app.data.audio.AudioRecorderManager;
 import com.tunawicara.app.data.repository.ExerciseRepositoryImpl;
+import com.tunawicara.app.data.repository.FirebaseAuthRepository;
+import com.tunawicara.app.data.repository.MateriWicaraRepositoryImpl;
+import com.tunawicara.app.di.FirebaseModule;
+import com.tunawicara.app.di.FirebaseModule_ProvideFirebaseAuthFactory;
+import com.tunawicara.app.di.FirebaseModule_ProvideFirebaseFirestoreFactory;
 import com.tunawicara.app.domain.usecase.GetExercisesUseCase;
+import com.tunawicara.app.domain.usecase.GetMateriWithProgressUseCase;
+import com.tunawicara.app.presentation.auth.AuthViewModel;
+import com.tunawicara.app.presentation.auth.AuthViewModel_HiltModules_KeyModule_ProvideFactory;
 import com.tunawicara.app.presentation.home.HomeViewModel;
 import com.tunawicara.app.presentation.home.HomeViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.tunawicara.app.presentation.latihan.LatihanViewModel;
+import com.tunawicara.app.presentation.latihan.LatihanViewModel_HiltModules_KeyModule_ProvideFactory;
 import dagger.hilt.android.ActivityRetainedLifecycle;
 import dagger.hilt.android.ViewModelLifecycle;
 import dagger.hilt.android.flags.HiltWrapper_FragmentGetContextFix_FragmentGetContextFixModule;
@@ -30,7 +44,6 @@ import dagger.hilt.android.internal.modules.ApplicationContextModule_ProvideCont
 import dagger.internal.DaggerGenerated;
 import dagger.internal.DoubleCheck;
 import dagger.internal.Preconditions;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.Generated;
@@ -63,6 +76,15 @@ public final class DaggerSpeechTherapyApplication_HiltComponents_SingletonC {
 
     public Builder applicationContextModule(ApplicationContextModule applicationContextModule) {
       this.applicationContextModule = Preconditions.checkNotNull(applicationContextModule);
+      return this;
+    }
+
+    /**
+     * @deprecated This module is declared, but an instance is not used in the component. This method is a no-op. For more, see https://dagger.dev/unused-modules.
+     */
+    @Deprecated
+    public Builder firebaseModule(FirebaseModule firebaseModule) {
+      Preconditions.checkNotNull(firebaseModule);
       return this;
     }
 
@@ -367,7 +389,7 @@ public final class DaggerSpeechTherapyApplication_HiltComponents_SingletonC {
 
     @Override
     public Set<String> getViewModelKeys() {
-      return Collections.<String>singleton(HomeViewModel_HiltModules_KeyModule_ProvideFactory.provide());
+      return ImmutableSet.<String>of(AuthViewModel_HiltModules_KeyModule_ProvideFactory.provide(), HomeViewModel_HiltModules_KeyModule_ProvideFactory.provide(), LatihanViewModel_HiltModules_KeyModule_ProvideFactory.provide());
     }
 
     @Override
@@ -393,7 +415,11 @@ public final class DaggerSpeechTherapyApplication_HiltComponents_SingletonC {
 
     private final ViewModelCImpl viewModelCImpl = this;
 
+    private Provider<AuthViewModel> authViewModelProvider;
+
     private Provider<HomeViewModel> homeViewModelProvider;
+
+    private Provider<LatihanViewModel> latihanViewModelProvider;
 
     private ViewModelCImpl(SingletonCImpl singletonCImpl,
         ActivityRetainedCImpl activityRetainedCImpl, SavedStateHandle savedStateHandleParam,
@@ -409,15 +435,21 @@ public final class DaggerSpeechTherapyApplication_HiltComponents_SingletonC {
       return new GetExercisesUseCase(singletonCImpl.exerciseRepositoryImplProvider.get());
     }
 
+    private GetMateriWithProgressUseCase getMateriWithProgressUseCase() {
+      return new GetMateriWithProgressUseCase(singletonCImpl.materiWicaraRepositoryImplProvider.get());
+    }
+
     @SuppressWarnings("unchecked")
     private void initialize(final SavedStateHandle savedStateHandleParam,
         final ViewModelLifecycle viewModelLifecycleParam) {
-      this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
+      this.authViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
+      this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
+      this.latihanViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
     }
 
     @Override
     public Map<String, Provider<ViewModel>> getHiltViewModelMap() {
-      return Collections.<String, Provider<ViewModel>>singletonMap("com.tunawicara.app.presentation.home.HomeViewModel", ((Provider) homeViewModelProvider));
+      return ImmutableMap.<String, Provider<ViewModel>>of("com.tunawicara.app.presentation.auth.AuthViewModel", ((Provider) authViewModelProvider), "com.tunawicara.app.presentation.home.HomeViewModel", ((Provider) homeViewModelProvider), "com.tunawicara.app.presentation.latihan.LatihanViewModel", ((Provider) latihanViewModelProvider));
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -441,8 +473,14 @@ public final class DaggerSpeechTherapyApplication_HiltComponents_SingletonC {
       @Override
       public T get() {
         switch (id) {
-          case 0: // com.tunawicara.app.presentation.home.HomeViewModel 
-          return (T) new HomeViewModel(viewModelCImpl.getExercisesUseCase(), singletonCImpl.audioRecorderManagerProvider.get(), singletonCImpl.audioPlayerManagerProvider.get());
+          case 0: // com.tunawicara.app.presentation.auth.AuthViewModel 
+          return (T) new AuthViewModel(singletonCImpl.firebaseAuthRepositoryProvider.get());
+
+          case 1: // com.tunawicara.app.presentation.home.HomeViewModel 
+          return (T) new HomeViewModel(viewModelCImpl.getExercisesUseCase(), viewModelCImpl.getMateriWithProgressUseCase(), singletonCImpl.materiWicaraRepositoryImplProvider.get(), singletonCImpl.audioRecorderManagerProvider.get(), singletonCImpl.audioPlayerManagerProvider.get(), singletonCImpl.provideFirebaseAuthProvider.get());
+
+          case 2: // com.tunawicara.app.presentation.latihan.LatihanViewModel 
+          return (T) new LatihanViewModel(viewModelCImpl.getMateriWithProgressUseCase(), singletonCImpl.materiWicaraRepositoryImplProvider.get(), singletonCImpl.audioRecorderManagerProvider.get(), singletonCImpl.audioPlayerManagerProvider.get(), singletonCImpl.provideFirebaseAuthProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -523,7 +561,15 @@ public final class DaggerSpeechTherapyApplication_HiltComponents_SingletonC {
 
     private final SingletonCImpl singletonCImpl = this;
 
+    private Provider<FirebaseAuth> provideFirebaseAuthProvider;
+
+    private Provider<FirebaseFirestore> provideFirebaseFirestoreProvider;
+
+    private Provider<FirebaseAuthRepository> firebaseAuthRepositoryProvider;
+
     private Provider<ExerciseRepositoryImpl> exerciseRepositoryImplProvider;
+
+    private Provider<MateriWicaraRepositoryImpl> materiWicaraRepositoryImplProvider;
 
     private Provider<AudioRecorderManager> audioRecorderManagerProvider;
 
@@ -537,9 +583,13 @@ public final class DaggerSpeechTherapyApplication_HiltComponents_SingletonC {
 
     @SuppressWarnings("unchecked")
     private void initialize(final ApplicationContextModule applicationContextModuleParam) {
-      this.exerciseRepositoryImplProvider = DoubleCheck.provider(new SwitchingProvider<ExerciseRepositoryImpl>(singletonCImpl, 0));
-      this.audioRecorderManagerProvider = DoubleCheck.provider(new SwitchingProvider<AudioRecorderManager>(singletonCImpl, 1));
-      this.audioPlayerManagerProvider = DoubleCheck.provider(new SwitchingProvider<AudioPlayerManager>(singletonCImpl, 2));
+      this.provideFirebaseAuthProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseAuth>(singletonCImpl, 1));
+      this.provideFirebaseFirestoreProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseFirestore>(singletonCImpl, 2));
+      this.firebaseAuthRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseAuthRepository>(singletonCImpl, 0));
+      this.exerciseRepositoryImplProvider = DoubleCheck.provider(new SwitchingProvider<ExerciseRepositoryImpl>(singletonCImpl, 3));
+      this.materiWicaraRepositoryImplProvider = DoubleCheck.provider(new SwitchingProvider<MateriWicaraRepositoryImpl>(singletonCImpl, 4));
+      this.audioRecorderManagerProvider = DoubleCheck.provider(new SwitchingProvider<AudioRecorderManager>(singletonCImpl, 5));
+      this.audioPlayerManagerProvider = DoubleCheck.provider(new SwitchingProvider<AudioPlayerManager>(singletonCImpl, 6));
     }
 
     @Override
@@ -548,7 +598,7 @@ public final class DaggerSpeechTherapyApplication_HiltComponents_SingletonC {
 
     @Override
     public Set<Boolean> getDisableFragmentGetContextFix() {
-      return Collections.<Boolean>emptySet();
+      return ImmutableSet.<Boolean>of();
     }
 
     @Override
@@ -575,13 +625,25 @@ public final class DaggerSpeechTherapyApplication_HiltComponents_SingletonC {
       @Override
       public T get() {
         switch (id) {
-          case 0: // com.tunawicara.app.data.repository.ExerciseRepositoryImpl 
-          return (T) new ExerciseRepositoryImpl();
+          case 0: // com.tunawicara.app.data.repository.FirebaseAuthRepository 
+          return (T) new FirebaseAuthRepository(singletonCImpl.provideFirebaseAuthProvider.get(), singletonCImpl.provideFirebaseFirestoreProvider.get());
 
-          case 1: // com.tunawicara.app.data.audio.AudioRecorderManager 
+          case 1: // com.google.firebase.auth.FirebaseAuth 
+          return (T) FirebaseModule_ProvideFirebaseAuthFactory.provideFirebaseAuth();
+
+          case 2: // com.google.firebase.firestore.FirebaseFirestore 
+          return (T) FirebaseModule_ProvideFirebaseFirestoreFactory.provideFirebaseFirestore();
+
+          case 3: // com.tunawicara.app.data.repository.ExerciseRepositoryImpl 
+          return (T) new ExerciseRepositoryImpl(singletonCImpl.provideFirebaseFirestoreProvider.get());
+
+          case 4: // com.tunawicara.app.data.repository.MateriWicaraRepositoryImpl 
+          return (T) new MateriWicaraRepositoryImpl(singletonCImpl.provideFirebaseFirestoreProvider.get());
+
+          case 5: // com.tunawicara.app.data.audio.AudioRecorderManager 
           return (T) new AudioRecorderManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 2: // com.tunawicara.app.data.audio.AudioPlayerManager 
+          case 6: // com.tunawicara.app.data.audio.AudioPlayerManager 
           return (T) new AudioPlayerManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           default: throw new AssertionError(id);

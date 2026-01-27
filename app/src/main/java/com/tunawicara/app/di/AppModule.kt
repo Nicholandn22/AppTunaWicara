@@ -4,8 +4,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.tunawicara.app.data.repository.ExerciseRepositoryImpl
 import com.tunawicara.app.data.repository.FirebaseAuthRepository
+import com.tunawicara.app.data.repository.MateriWicaraRepositoryImpl
 import com.tunawicara.app.domain.repository.AuthRepository
 import com.tunawicara.app.domain.repository.ExerciseRepository
+import com.tunawicara.app.domain.repository.MateriWicaraRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -31,6 +33,12 @@ abstract class AppModule {
     abstract fun bindAuthRepository(
         firebaseAuthRepository: FirebaseAuthRepository
     ): AuthRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindMateriWicaraRepository(
+        materiWicaraRepositoryImpl: MateriWicaraRepositoryImpl
+    ): MateriWicaraRepository
 }
 
 /**

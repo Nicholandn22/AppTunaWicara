@@ -1,7 +1,10 @@
 package com.tunawicara.app;
 
 import com.tunawicara.app.di.AppModule;
+import com.tunawicara.app.di.FirebaseModule;
+import com.tunawicara.app.presentation.auth.AuthViewModel_HiltModules;
 import com.tunawicara.app.presentation.home.HomeViewModel_HiltModules;
+import com.tunawicara.app.presentation.latihan.LatihanViewModel_HiltModules;
 import dagger.Binds;
 import dagger.Component;
 import dagger.Module;
@@ -127,6 +130,7 @@ public final class SpeechTherapyApplication_HiltComponents {
       modules = {
           AppModule.class,
           ApplicationContextModule.class,
+          FirebaseModule.class,
           HiltWrapper_FragmentGetContextFix_FragmentGetContextFixModule.class,
           ActivityRetainedCBuilderModule.class,
           ServiceCBuilderModule.class
@@ -152,8 +156,10 @@ public final class SpeechTherapyApplication_HiltComponents {
 
   @Subcomponent(
       modules = {
+          AuthViewModel_HiltModules.KeyModule.class,
           HiltWrapper_ActivityRetainedComponentManager_LifecycleModule.class,
           HomeViewModel_HiltModules.KeyModule.class,
+          LatihanViewModel_HiltModules.KeyModule.class,
           ActivityCBuilderModule.class,
           ViewModelCBuilderModule.class
       }
@@ -191,8 +197,10 @@ public final class SpeechTherapyApplication_HiltComponents {
 
   @Subcomponent(
       modules = {
+          AuthViewModel_HiltModules.BindsModule.class,
           HiltWrapper_HiltViewModelFactory_ViewModelModule.class,
-          HomeViewModel_HiltModules.BindsModule.class
+          HomeViewModel_HiltModules.BindsModule.class,
+          LatihanViewModel_HiltModules.BindsModule.class
       }
   )
   @ViewModelScoped
